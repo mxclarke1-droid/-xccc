@@ -1,0 +1,2257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Santa Tracker — North Pole Tracking Network</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #02070b;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#scene {
+    position: fixed;
+    inset: 0;
+}
+
+#topBar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    background: linear-gradient(180deg, rgba(4,12,18,.97), rgba(4,12,18,.78));
+    border-bottom: 1px solid rgba(90,180,220,.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 20;
+}
+
+.logo {
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.logoTop {
+    font-size: 20px;
+}
+
+.logoBottom {
+    font-size: 11px;
+    color: #8eb5c7;
+    margin-top: 3px;
+    letter-spacing: 2px;
+}
+
+.online {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #8ff0a4;
+}
+
+.onlineDot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #36e06f;
+    box-shadow: 0 0 12px #36e06f;
+}
+
+.panel {
+    position: fixed;
+    z-index: 15;
+    background: rgba(3,13,19,.91);
+    border: 1px solid rgba(100,180,215,.35);
+    box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+}
+
+#leftPanel {
+    left: 18px;
+    top: 92px;
+    width: 275px;
+    padding: 15px;
+}
+
+#rightPanel {
+    right: 18px;
+    top: 92px;
+    width: 290px;
+    padding: 15px;
+}
+
+.panelTitle {
+    color: #9cc7da;
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    font-size: 12px;
+}
+
+.row span:first-child {
+    color: #7795a3;
+}
+
+.row span:last-child {
+    text-align: right;
+    font-weight: bold;
+}
+
+.green {
+    color: #57e57b;
+}
+
+.red {
+    color: #ff6262;
+}
+
+.yellow {
+    color: #ffd45c;
+}
+
+.buttons {
+    display: grid;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+button {
+    border: 1px solid rgba(255,255,255,.15);
+    background: #11242d;
+    color: white;
+    padding: 11px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    letter-spacing: .5px;
+}
+
+button:hover {
+    background: #183641;
+}
+
+#startBtn {
+    background: #9e1d25;
+}
+
+#startBtn.active {
+    background: #13753a;
+}
+
+#bottomBar {
+    position: fixed;
+    left: 18px;
+    right: 18px;
+    bottom: 15px;
+    height: 43px;
+    z-index: 20;
+    background: rgba(3,13,19,.92);
+    border: 1px solid rgba(100,180,215,.3);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    font-size: 10px;
+    color: #8ca7b3;
+}
+
+.bottomValue {
+    color: white;
+    margin-left: 5px;
+}
+
+#modelStatus {
+    padding: 9px;
+    background: rgba(255,255,255,.035);
+    border-radius: 5px;
+    margin-bottom: 12px;
+    color: #9eb6c1;
+    font-size: 11px;
+}
+
+#arrivalBox {
+    margin-top: 13px;
+    padding: 12px;
+    background: rgba(255,255,255,.035);
+    border-radius: 5px;
+}
+
+.arrivalBig {
+    font-size: 21px;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+#settingsModal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.65);
+}
+
+.modal {
+    width: 350px;
+    background: #07131a;
+    border: 1px solid #4d8196;
+    border-radius: 9px;
+    padding: 20px;
+}
+
+.modal h2 {
+    margin-top: 0;
+}
+
+select,
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0 14px;
+    background: #10242d;
+    color: white;
+    border: 1px solid #3c6675;
+    border-radius: 5px;
+}
+
+#modelError {
+    color: #ff7777;
+    font-size: 11px;
+    display: none;
+}
+
+#routeInfo {
+    font-size: 11px;
+    color: #8ea9b5;
+    line-height: 1.5;
+    margin-top: 12px;
+}
+
+@media(max-width:900px) {
+    #leftPanel,
+    #rightPanel {
+        transform: scale(.85);
+        transform-origin: top left;
+    }
+
+    #rightPanel {
+        transform-origin: top right;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="scene"></div>
+
+<div id="topBar">
+    <div class="logo">
+        <div class="logoTop">🎅 SANTA TRACKER</div>
+        <div class="logoBottom">NORTH POLE TRACKING NETWORK</div>
+    </div>
+
+    <div class="online">
+        <div class="onlineDot"></div>
+        TRACKING SYSTEM ONLINE
+    </div>
+</div>
+
+<div id="leftPanel" class="panel">
+
+    <div class="panelTitle">CURRENT TRACKING DATA</div>
+
+    <div class="row">
+        <span>LOCATION</span>
+        <span id="locationValue">NORTH POLE</span>
+    </div>
+
+    <div class="row">
+        <span>DESTINATION</span>
+        <span id="destinationValue">STANDING BY</span>
+    </div>
+
+    <div class="row">
+        <span>SPEED</span>
+        <span>1,850 MPH</span>
+    </div>
+
+    <div class="row">
+        <span>ALTITUDE</span>
+        <span>32,000 FT</span>
+    </div>
+
+    <div class="row">
+        <span>REINDEER</span>
+        <span>9 DETECTED</span>
+    </div>
+
+    <div class="row">
+        <span>TIME ZONE</span>
+        <span id="zoneValue">UTC</span>
+    </div>
+
+    <div class="row">
+        <span>FLIGHT STATUS</span>
+        <span id="flightStatus" class="yellow">STANDING BY</span>
+    </div>
+
+    <div class="panelTitle" style="margin-top:18px;">TRACKING NETWORK</div>
+
+    <div class="row">
+        <span>SATELLITES</span>
+        <span class="green">24 CONNECTED</span>
+    </div>
+
+    <div class="row">
+        <span>CELL TOWERS</span>
+        <span class="green">300+ ACTIVE</span>
+    </div>
+
+    <div class="row">
+        <span>RADIO SIGNAL</span>
+        <span class="green">▮▮▮▮▮</span>
+    </div>
+
+    <div class="row">
+        <span>TRACKING LINK</span>
+        <span class="green">ACTIVE</span>
+    </div>
+
+    <div class="buttons">
+        <button id="startBtn">▶ START TRACKING</button>
+        <button id="stopBtn">■ STOP TRACKING</button>
+        <button id="settingsBtn">⚙ PARENT SETTINGS</button>
+    </div>
+
+</div>
+
+<div id="rightPanel" class="panel">
+
+    <div class="panelTitle">SANTA TRACKING</div>
+
+    <div id="modelStatus">
+        🛷 Loading Santa's sleigh...
+    </div>
+
+    <div class="row">
+        <span>NEXT STOP</span>
+        <span id="nextStop">NORTH POLE</span>
+    </div>
+
+    <div class="row">
+        <span>ACTIVE LOCATION</span>
+        <span id="activeLocation">NORTH POLE</span>
+    </div>
+
+    <div id="arrivalBox">
+
+        <div class="panelTitle" style="margin-bottom:5px;">
+            NEXT ARRIVAL
+        </div>
+
+        <div class="arrivalBig" id="arrivalCountdown">
+            STANDING BY
+        </div>
+
+        <div style="margin-top:10px;font-size:11px;color:#829da9;">
+            HOME LOCATION
+        </div>
+
+        <div id="homeLocation" style="margin-top:3px;">
+            Not set
+        </div>
+
+    </div>
+
+    <div id="routeInfo">
+        Route follows a fictional time-zone progression with
+        multiple cities and places in every U.S. state.
+    </div>
+
+</div>
+
+<div id="bottomBar">
+
+    <div>
+        SYSTEM:
+        <span class="bottomValue green">ONLINE</span>
+    </div>
+
+    <div>
+        TRACKING:
+        <span class="bottomValue" id="bottomTracking">STANDBY</span>
+    </div>
+
+    <div>
+        LAST SIGNAL:
+        <span class="bottomValue" id="lastSignal">NORTH POLE</span>
+    </div>
+
+    <div>
+        UTC:
+        <span class="bottomValue" id="utcClock">--:--:--</span>
+    </div>
+
+    <button id="musicBtn" style="padding:5px 10px;">
+        🎵 MUSIC
+    </button>
+
+</div>
+
+<div id="settingsModal">
+
+    <div class="modal">
+
+        <h2>🎅 Parent Settings</h2>
+
+        <label>Home State</label>
+
+        <select id="stateSelect">
+            <option value="">Select a state</option>
+        </select>
+
+        <label>Home Location</label>
+
+        <input id="homeInput" placeholder="Example: Atlanta">
+
+        <button id="saveSettings" style="width:100%;">
+            SAVE SETTINGS
+        </button>
+
+        <button id="closeSettings" style="width:100%;margin-top:8px;">
+            CLOSE
+        </button>
+
+    </div>
+
+</div>
+
+<audio id="music" loop>
+    <source src="pulsebox-jazz-christmas-432315.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+
+/* =========================================================
+   BASIC THREE.JS SETUP
+========================================================= */
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth / window.innerHeight,
+    0.01,
+    1000
+);
+
+camera.position.set(0, 3.8, 5.8);
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: false
+});
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x02070b);
+
+document.getElementById("scene").appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(
+    camera,
+    renderer.domElement
+);
+
+controls.enableDamping = true;
+controls.dampingFactor = .07;
+controls.minDistance = 1.25;
+controls.maxDistance = 11;
+
+
+/* =========================================================
+   LIGHTING
+========================================================= */
+
+scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+
+const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+sunLight.position.set(5, 4, 5);
+scene.add(sunLight);
+
+
+/* =========================================================
+   EARTH
+========================================================= */
+
+const EARTH_RADIUS = 2;
+
+const earthGeometry = new THREE.SphereGeometry(
+    EARTH_RADIUS,
+    96,
+    96
+);
+
+const earthTexture = new THREE.TextureLoader().load(
+    "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg"
+);
+
+const earthMaterial = new THREE.MeshPhongMaterial({
+    map: earthTexture,
+    shininess: 8
+});
+
+const earth = new THREE.Mesh(
+    earthGeometry,
+    earthMaterial
+);
+
+scene.add(earth);
+
+
+/* ATMOSPHERE */
+
+const atmosphereGeometry = new THREE.SphereGeometry(
+    EARTH_RADIUS * 1.015,
+    64,
+    64
+);
+
+const atmosphereMaterial = new THREE.MeshBasicMaterial({
+    color: 0x438fc4,
+    transparent: true,
+    opacity: .10,
+    side: THREE.BackSide
+});
+
+const atmosphere = new THREE.Mesh(
+    atmosphereGeometry,
+    atmosphereMaterial
+);
+
+scene.add(atmosphere);
+
+
+/* =========================================================
+   LOCATION DATA
+=========================================================
+
+   The route is ordered approximately by time-zone progression.
+   Each location has:
+   name, latitude, longitude, UTC offset
+========================================================= */
+
+
+/* ---------- INTERNATIONAL LOCATIONS ---------- */
+
+const internationalLocations = [
+
+    ["AUCKLAND", -36.8509, 174.7645, "UTC+12"],
+    ["WELLINGTON", -41.2866, 174.7756, "UTC+12"],
+    ["SYDNEY", -33.8688, 151.2093, "UTC+11"],
+    ["MELBOURNE", -37.8136, 144.9631, "UTC+11"],
+    ["BRISBANE", -27.4705, 153.0260, "UTC+10"],
+    ["TOKYO", 35.6762, 139.6503, "UTC+9"],
+    ["OSAKA", 34.6937, 135.5023, "UTC+9"],
+    ["SEOUL", 37.5665, 126.9780, "UTC+9"],
+    ["BEIJING", 39.9042, 116.4074, "UTC+8"],
+    ["SHANGHAI", 31.2304, 121.4737, "UTC+8"],
+    ["SINGAPORE", 1.3521, 103.8198, "UTC+8"],
+    ["BANGKOK", 13.7563, 100.5018, "UTC+7"],
+    ["JAKARTA", -6.2088, 106.8456, "UTC+7"],
+    ["NEW DELHI", 28.6139, 77.2090, "UTC+5:30"],
+    ["MUMBAI", 19.0760, 72.8777, "UTC+5:30"],
+    ["DUBAI", 25.2048, 55.2708, "UTC+4"],
+    ["MOSCOW", 55.7558, 37.6173, "UTC+3"],
+    ["CAIRO", 30.0444, 31.2357, "UTC+2"],
+    ["JOHANNESBURG", -26.2041, 28.0473, "UTC+2"],
+    ["ROME", 41.9028, 12.4964, "UTC+1"],
+    ["PARIS", 48.8566, 2.3522, "UTC+1"],
+    ["BERLIN", 52.5200, 13.4050, "UTC+1"],
+    ["MADRID", 40.4168, -3.7038, "UTC+1"],
+    ["LONDON", 51.5074, -0.1278, "UTC"],
+    ["DUBLIN", 53.3498, -6.2603, "UTC"],
+    ["REYKJAVIK", 64.1466, -21.9426, "UTC"],
+
+    ["SAO PAULO", -23.5505, -46.6333, "UTC-3"],
+    ["RIO DE JANEIRO", -22.9068, -43.1729, "UTC-3"],
+    ["BUENOS AIRES", -34.6037, -58.3816, "UTC-3"],
+    ["SANTIAGO", -33.4489, -70.6693, "UTC-4"],
+
+    ["SANTO DOMINGO", 18.4861, -69.9312, "UTC-4"],
+    ["SAN JUAN", 18.4655, -66.1057, "UTC-4"],
+    ["KINGSTON", 17.9712, -76.7936, "UTC-5"],
+
+    ["PANAMA CITY", 8.9824, -79.5199, "UTC-5"],
+    ["LIMA", -12.0464, -77.0428, "UTC-5"],
+    ["MEXICO CITY", 19.4326, -99.1332, "UTC-6"],
+    ["TORONTO", 43.6532, -79.3832, "UTC-5"],
+    ["VANCOUVER", 49.2827, -123.1207, "UTC-8"],
+    ["ANCHORAGE", 61.2181, -149.9003, "UTC-9"],
+    ["HONOLULU", 21.3069, -157.8583, "UTC-10"]
+
+];
+
+
+/* =========================================================
+   U.S. STATE LOCATIONS
+   Multiple cities per state
+========================================================= */
+
+const stateLocations = [
+
+/* ALABAMA */
+["BIRMINGHAM",33.5186,-86.8104,"AL"],
+["MONTGOMERY",32.3777,-86.3000,"AL"],
+["MOBILE",30.6954,-88.0399,"AL"],
+["HUNTSVILLE",34.7304,-86.5861,"AL"],
+["TUSCALOOSA",33.2098,-87.5692,"AL"],
+
+/* ALASKA */
+["ANCHORAGE",61.2181,-149.9003,"AK"],
+["FAIRBANKS",64.8378,-147.7164,"AK"],
+["JUNEAU",58.3019,-134.4197,"AK"],
+["SITKA",57.0531,-135.3300,"AK"],
+
+/* ARIZONA */
+["PHOENIX",33.4484,-112.0740,"AZ"],
+["TUCSON",32.2226,-110.9747,"AZ"],
+["MESA",33.4152,-111.8315,"AZ"],
+["FLAGSTAFF",35.1983,-111.6513,"AZ"],
+["SCOTTSDALE",33.4942,-111.9261,"AZ"],
+
+/* ARKANSAS */
+["LITTLE ROCK",34.7465,-92.2896,"AR"],
+["FAYETTEVILLE",36.0626,-94.1574,"AR"],
+["FORT SMITH",35.3859,-94.3985,"AR"],
+["JONESBORO",35.8423,-90.7043,"AR"],
+
+/* CALIFORNIA */
+["LOS ANGELES",34.0522,-118.2437,"CA"],
+["SAN FRANCISCO",37.7749,-122.4194,"CA"],
+["SAN DIEGO",32.7157,-117.1611,"CA"],
+["SACRAMENTO",38.5816,-121.4944,"CA"],
+["SAN JOSE",37.3382,-121.8863,"CA"],
+["FRESNO",36.7378,-119.7871,"CA"],
+["OAKLAND",37.8044,-122.2712,"CA"],
+["BAKERSFIELD",35.3733,-119.0187,"CA"],
+["ANAHEIM",33.8366,-117.9143,"CA"],
+["SANTA BARBARA",34.4208,-119.6982,"CA"],
+
+/* COLORADO */
+["DENVER",39.7392,-104.9903,"CO"],
+["COLORADO SPRINGS",38.8339,-104.8214,"CO"],
+["AURORA",39.7294,-104.8319,"CO"],
+["FORT COLLINS",40.5853,-105.0844,"CO"],
+["BOULDER",40.0150,-105.2705,"CO"],
+
+/* CONNECTICUT */
+["HARTFORD",41.7658,-72.6734,"CT"],
+["BRIDGEPORT",41.1792,-73.1894,"CT"],
+["NEW HAVEN",41.3083,-72.9279,"CT"],
+["STAMFORD",41.0534,-73.5387,"CT"],
+
+/* DELAWARE */
+["WILMINGTON",39.7391,-75.5398,"DE"],
+["DOVER",39.1573,-75.5197,"DE"],
+["NEWARK",39.6837,-75.7497,"DE"],
+
+/* FLORIDA */
+["MIAMI",25.7617,-80.1918,"FL"],
+["ORLANDO",28.5383,-81.3792,"FL"],
+["TAMPA",27.9506,-82.4572,"FL"],
+["JACKSONVILLE",30.3322,-81.6557,"FL"],
+["TALLAHASSEE",30.4383,-84.2807,"FL"],
+["FORT LAUDERDALE",26.1224,-80.1373,"FL"],
+["NAPLES",26.1423,-81.7950,"FL"],
+["KEY WEST",24.5551,-81.7800,"FL"],
+["PENSACOLA",30.4213,-87.2169,"FL"],
+["DAYTONA BEACH",29.2108,-81.0228,"FL"],
+
+/* GEORGIA */
+["ATLANTA",33.7490,-84.3880,"GA"],
+["SAVANNAH",32.0809,-81.0912,"GA"],
+["AUGUSTA",33.4735,-82.0105,"GA"],
+["COLUMBUS",32.4609,-84.9877,"GA"],
+["MACON",32.8407,-83.6324,"GA"],
+["ATHENS",33.9519,-83.3576,"GA"],
+["VALDOSTA",30.8327,-83.2785,"GA"],
+["ALBANY",31.5785,-84.1557,"GA"],
+["MARIETTA",33.9526,-84.5499,"GA"],
+["ROSWELL",34.0232,-84.3616,"GA"],
+
+/* HAWAII */
+["HONOLULU",21.3069,-157.8583,"HI"],
+["HILO",19.7074,-155.0810,"HI"],
+["KAILUA",21.4022,-157.7394,"HI"],
+["KAHULUI",20.8893,-156.4729,"HI"],
+
+/* IDAHO */
+["BOISE",43.6150,-116.2023,"ID"],
+["IDAHO FALLS",43.4917,-112.0339,"ID"],
+["NAMPA",43.5407,-116.5635,"ID"],
+["POCATELLO",42.8713,-112.4455,"ID"],
+
+/* ILLINOIS */
+["CHICAGO",41.8781,-87.6298,"IL"],
+["SPRINGFIELD",39.7817,-89.6501,"IL"],
+["ROCKFORD",42.2711,-89.0940,"IL"],
+["PEORIA",40.6936,-89.5890,"IL"],
+["NAPERVILLE",41.7508,-88.1535,"IL"],
+
+/* INDIANA */
+["INDIANAPOLIS",39.7684,-86.1581,"IN"],
+["FORT WAYNE",41.0793,-85.1394,"IN"],
+["EVANSVILLE",37.9716,-87.5711,"IN"],
+["SOUTH BEND",41.6764,-86.2520,"IN"],
+
+/* IOWA */
+["DES MOINES",41.5868,-93.6250,"IA"],
+["CEDAR RAPIDS",41.9779,-91.6656,"IA"],
+["DAVENPORT",41.5236,-90.5776,"IA"],
+["IOWA CITY",41.6611,-91.5302,"IA"],
+
+/* KANSAS */
+["WICHITA",37.6872,-97.3301,"KS"],
+["TOPEKA",39.0473,-95.6752,"KS"],
+["OVERLAND PARK",38.9822,-94.6708,"KS"],
+["LAWRENCE",38.9717,-95.2353,"KS"],
+
+/* KENTUCKY */
+["LOUISVILLE",38.2527,-85.7585,"KY"],
+["LEXINGTON",38.0406,-84.5037,"KY"],
+["BOWLING GREEN",36.9685,-86.4808,"KY"],
+["FRANKFORT",38.1867,-84.8753,"KY"],
+
+/* LOUISIANA */
+["NEW ORLEANS",29.9511,-90.0715,"LA"],
+["BATON ROUGE",30.4515,-91.1871,"LA"],
+["SHREVEPORT",32.5252,-93.7502,"LA"],
+["LAFAYETTE",30.2241,-92.0198,"LA"],
+["LAKE CHARLES",30.2266,-93.2174,"LA"],
+
+/* MAINE */
+["PORTLAND",43.6591,-70.2568,"ME"],
+["AUGUSTA",44.3106,-69.7795,"ME"],
+["BANGOR",44.8012,-68.7778,"ME"],
+["LEWISTON",44.1004,-70.2148,"ME"],
+
+/* MARYLAND */
+["BALTIMORE",39.2904,-76.6122,"MD"],
+["ANNAPOLIS",38.9784,-76.4922,"MD"],
+["FREDERICK",39.4143,-77.4105,"MD"],
+["ROCKVILLE",39.0839,-77.1528,"MD"],
+
+/* MASSACHUSETTS */
+["BOSTON",42.3601,-71.0589,"MA"],
+["WORCESTER",42.2626,-71.8023,"MA"],
+["SPRINGFIELD",42.1015,-72.5898,"MA"],
+["LOWELL",42.6334,-71.3162,"MA"],
+["CAMBRIDGE",42.3736,-71.1097,"MA"],
+
+/* MICHIGAN */
+["DETROIT",42.3314,-83.0458,"MI"],
+["GRAND RAPIDS",42.9634,-85.6681,"MI"],
+["LANSING",42.7325,-84.5555,"MI"],
+["ANN ARBOR",42.2808,-83.7430,"MI"],
+["FLINT",43.0125,-83.6875,"MI"],
+
+/* MINNESOTA */
+["MINNEAPOLIS",44.9778,-93.2650,"MN"],
+["SAINT PAUL",44.9537,-93.0900,"MN"],
+["ROCHESTER",44.0121,-92.4802,"MN"],
+["DULUTH",46.7867,-92.1005,"MN"],
+
+/* MISSISSIPPI */
+["JACKSON",32.2988,-90.1848,"MS"],
+["GULFPORT",30.3674,-89.0928,"MS"],
+["HATTIESBURG",31.3271,-89.2903,"MS"],
+["SOUTHAVEN",34.9889,-90.0126,"MS"],
+
+/* MISSOURI */
+["KANSAS CITY",39.0997,-94.5786,"MO"],
+["ST LOUIS",38.6270,-90.1994,"MO"],
+["SPRINGFIELD",37.2090,-93.2923,"MO"],
+["COLUMBIA",38.9517,-92.3341,"MO"],
+
+/* MONTANA */
+["BILLINGS",45.7833,-108.5007,"MT"],
+["MISSOULA",46.8721,-113.9940,"MT"],
+["GREAT FALLS",47.4942,-111.2833,"MT"],
+["HELENA",46.5891,-112.0391,"MT"],
+
+/* NEBRASKA */
+["OMAHA",41.2565,-95.9345,"NE"],
+["LINCOLN",40.8136,-96.7026,"NE"],
+["BELLEVUE",41.1544,-95.9146,"NE"],
+["GRAND ISLAND",40.9264,-98.3420,"NE"],
+
+/* NEVADA */
+["LAS VEGAS",36.1699,-115.1398,"NV"],
+["RENO",39.5296,-119.8138,"NV"],
+["HENDERSON",36.0395,-114.9817,"NV"],
+["CARSON CITY",39.1638,-119.7674,"NV"],
+
+/* NEW HAMPSHIRE */
+["MANCHESTER",42.9956,-71.4548,"NH"],
+["CONCORD",43.2081,-71.5376,"NH"],
+["NASHUA",42.7654,-71.4676,"NH"],
+["PORTSMOUTH",43.0718,-70.7626,"NH"],
+
+/* NEW JERSEY */
+["NEWARK",40.7357,-74.1724,"NJ"],
+["JERSEY CITY",40.7178,-74.0431,"NJ"],
+["TRENTON",40.2171,-74.7429,"NJ"],
+["ATLANTIC CITY",39.3643,-74.4229,"NJ"],
+["PATERSON",40.9168,-74.1718,"NJ"],
+
+/* NEW MEXICO */
+["ALBUQUERQUE",35.0844,-106.6504,"NM"],
+["SANTA FE",35.6870,-105.9378,"NM"],
+["LAS CRUCES",32.3199,-106.7637,"NM"],
+["ROSWELL",33.3943,-104.5230,"NM"],
+
+/* NEW YORK */
+["NEW YORK CITY",40.7128,-74.0060,"NY"],
+["BUFFALO",42.8864,-78.8784,"NY"],
+["ROCHESTER",43.1566,-77.6088,"NY"],
+["SYRACUSE",43.0481,-76.1474,"NY"],
+["ALBANY",42.6526,-73.7562,"NY"],
+["YONKERS",40.9312,-73.8988,"NY"],
+
+/* NORTH CAROLINA */
+["CHARLOTTE",35.2271,-80.8431,"NC"],
+["RALEIGH",35.7796,-78.6382,"NC"],
+["DURHAM",36.0181,-78.8750,"NC"],
+["GREENSBORO",36.0726,-79.7920,"NC"],
+["ASHEVILLE",35.5951,-82.5515,"NC"],
+["WILMINGTON",34.2257,-77.9447,"NC"],
+
+/* NORTH DAKOTA */
+["FARGO",46.8772,-96.7898,"ND"],
+["BISMARCK",46.8083,-100.7837,"ND"],
+["GRAND FORKS",47.9253,-97.0329,"ND"],
+["MINOT",48.2325,-101.2963,"ND"],
+
+/* OHIO */
+["COLUMBUS",39.9612,-82.9988,"OH"],
+["CLEVELAND",41.4993,-81.6944,"OH"],
+["CINCINNATI",39.1031,-84.5120,"OH"],
+["TOLEDO",41.6528,-83.5379,"OH"],
+["AKRON",41.0814,-81.5190,"OH"],
+["DAYTON",39.7589,-84.1916,"OH"],
+
+/* OKLAHOMA */
+["OKLAHOMA CITY",35.4676,-97.5164,"OK"],
+["TULSA",36.1540,-95.9928,"OK"],
+["NORMAN",35.2226,-97.4395,"OK"],
+["LAWTON",34.6036,-98.3959,"OK"],
+
+/* OREGON */
+["PORTLAND",45.5152,-122.6784,"OR"],
+["EUGENE",44.0521,-123.0868,"OR"],
+["SALEM",44.9429,-123.0351,"OR"],
+["BEND",44.0582,-121.3153,"OR"],
+["MEDFORD",42.3265,-122.8756,"OR"],
+
+/* PENNSYLVANIA */
+["PHILADELPHIA",39.9526,-75.1652,"PA"],
+["PITTSBURGH",40.4406,-79.9959,"PA"],
+["HARRISBURG",40.2732,-76.8867,"PA"],
+["ALLENTOWN",40.6023,-75.4714,"PA"],
+["ERIE",42.1292,-80.0851,"PA"],
+["SCRANTON",41.4089,-75.6624,"PA"],
+
+/* RHODE ISLAND */
+["PROVIDENCE",41.8240,-71.4128,"RI"],
+["WARWICK",41.7001,-71.4162,"RI"],
+["CRANSTON",41.7798,-71.4373,"RI"],
+
+/* SOUTH CAROLINA */
+["CHARLESTON",32.7765,-79.9311,"SC"],
+["COLUMBIA",34.0007,-81.0348,"SC"],
+["GREENVILLE",34.8526,-82.3940,"SC"],
+["MYRTLE BEACH",33.6891,-78.8867,"SC"],
+["ROCK HILL",34.9249,-81.0251,"SC"],
+
+/* SOUTH DAKOTA */
+["SIOUX FALLS",43.5446,-96.7311,"SD"],
+["RAPID CITY",44.0805,-103.2310,"SD"],
+["PIERRE",44.3683,-100.3510,"SD"],
+["ABERDEEN",45.4647,-98.4865,"SD"],
+
+/* TENNESSEE */
+["NASHVILLE",36.1627,-86.7816,"TN"],
+["MEMPHIS",35.1495,-90.0490,"TN"],
+["KNOXVILLE",35.9606,-83.9207,"TN"],
+["CHATTANOOGA",35.0456,-85.3097,"TN"],
+["MURFREESBORO",35.8456,-86.3903,"TN"],
+
+/* TEXAS */
+["HOUSTON",29.7604,-95.3698,"TX"],
+["DALLAS",32.7767,-96.7970,"TX"],
+["SAN ANTONIO",29.4241,-98.4936,"TX"],
+["AUSTIN",30.2672,-97.7431,"TX"],
+["FORT WORTH",32.7555,-97.3308,"TX"],
+["EL PASO",31.7619,-106.4850,"TX"],
+["ARLINGTON",32.7357,-97.1081,"TX"],
+["CORPUS CHRISTI",27.8006,-97.3964,"TX"],
+["LUBBOCK",33.5779,-101.8552,"TX"],
+["WACO",31.5493,-97.1467,"TX"],
+
+/* UTAH */
+["SALT LAKE CITY",40.7608,-111.8910,"UT"],
+["PROVO",40.2338,-111.6585,"UT"],
+["OGDEN",41.2230,-111.9738,"UT"],
+["ST GEORGE",37.0965,-113.5684,"UT"],
+
+/* VERMONT */
+["BURLINGTON",44.4759,-73.2121,"VT"],
+["MONTPELIER",44.2601,-72.5754,"VT"],
+["RUTLAND",43.6106,-72.9726,"VT"],
+
+/* VIRGINIA */
+["VIRGINIA BEACH",36.8529,-75.9780,"VA"],
+["RICHMOND",37.5407,-77.4360,"VA"],
+["NORFOLK",36.8508,-76.2859,"VA"],
+["ALEXANDRIA",38.8048,-77.0469,"VA"],
+["ROANOKE",37.2709,-79.9414,"VA"],
+
+/* WASHINGTON */
+["SEATTLE",47.6062,-122.3321,"WA"],
+["SPOKANE",47.6588,-117.4260,"WA"],
+["TACOMA",47.2529,-122.4443,"WA"],
+["VANCOUVER",45.6387,-122.6615,"WA"],
+["BELLEVUE",47.6101,-122.2015,"WA"],
+
+/* WEST VIRGINIA */
+["CHARLESTON",38.3498,-81.6326,"WV"],
+["HUNTINGTON",38.4192,-82.4452,"WV"],
+["MORGANTOWN",39.6295,-79.9559,"WV"],
+
+/* WISCONSIN */
+["MILWAUKEE",43.0389,-87.9065,"WI"],
+["MADISON",43.0731,-89.4012,"WI"],
+["GREEN BAY",44.5133,-88.0133,"WI"],
+["KENOSHA",42.5847,-87.8212,"WI"],
+
+/* WYOMING */
+["CHEYENNE",41.1403,-104.8202,"WY"],
+["CASPER",42.8501,-106.3252,"WY"],
+["JACKSON",43.4799,-110.7624,"WY"],
+["LARAMIE",41.3114,-105.5911,"WY"]
+
+];
+
+
+/* =========================================================
+   BUILD ROUTE
+========================================================= */
+
+let route = [];
+
+/* Start at North Pole */
+route.push({
+    name:"NORTH POLE",
+    lat:89.9,
+    lng:0,
+    zone:"UTC"
+});
+
+
+/* International time-zone route */
+
+internationalLocations.forEach(x => {
+
+    route.push({
+        name:x[0],
+        lat:x[1],
+        lng:x[2],
+        zone:x[3]
+    });
+
+});
+
+
+/* Add U.S. locations.
+   They are grouped by time zone so Santa moves generally
+   from western time zones toward eastern time zones. */
+
+const timeZoneGroups = {
+
+    "-10": [],
+    "-9": [],
+    "-8": [],
+    "-7": [],
+    "-6": [],
+    "-5": [],
+    "-4": []
+};
+
+
+/* approximate state/city time zones */
+
+const stateZone = {
+
+    AK:"-9",
+    HI:"-10",
+
+    WA:"-8",
+    OR:"-8",
+    CA:"-8",
+    NV:"-8",
+
+    ID:"-7",
+    UT:"-7",
+    AZ:"-7",
+    MT:"-7",
+    WY:"-7",
+    CO:"-7",
+    NM:"-7",
+
+    ND:"-6",
+    SD:"-6",
+    NE:"-6",
+    KS:"-6",
+    OK:"-6",
+    TX:"-6",
+    MN:"-6",
+    IA:"-6",
+    MO:"-6",
+    AR:"-6",
+    LA:"-6",
+    WI:"-6",
+    IL:"-6",
+    MS:"-6",
+    AL:"-6",
+
+    MI:"-5",
+    IN:"-5",
+    OH:"-5",
+    KY:"-5",
+    TN:"-5",
+    FL:"-5",
+    GA:"-5",
+    SC:"-5",
+    NC:"-5",
+    VA:"-5",
+    WV:"-5",
+    PA:"-5",
+    NY:"-5",
+    NJ:"-5",
+    DE:"-5",
+    MD:"-5",
+    DC:"-5",
+    CT:"-5",
+    RI:"-5",
+    MA:"-5",
+    VT:"-5",
+    NH:"-5",
+    ME:"-5"
+};
+
+
+stateLocations.forEach(x => {
+
+    const state = x[3];
+
+    const zone = stateZone[state];
+
+    if (!timeZoneGroups[zone]) {
+        timeZoneGroups[zone] = [];
+    }
+
+    timeZoneGroups[zone].push({
+        name:x[0],
+        lat:x[1],
+        lng:x[2],
+        zone:"UTC" + zone
+    });
+
+});
+
+
+/* Add U.S. route in time-zone order */
+
+["-10","-9","-8","-7","-6","-5","-4"].forEach(zone => {
+
+    timeZoneGroups[zone].forEach(location => {
+
+        route.push(location);
+
+    });
+
+});
+
+
+/* Finish route */
+
+route.push({
+    name:"NORTH POLE",
+    lat:89.9,
+    lng:0,
+    zone:"UTC"
+});
+
+
+/* =========================================================
+   LABEL SYSTEM
+========================================================= */
+
+const labelGroup = new THREE.Group();
+
+scene.add(labelGroup);
+
+
+function makeLabel(text, size, type) {
+
+    const canvas = document.createElement("canvas");
+
+    canvas.width = 512;
+    canvas.height = 128;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0,0,512,128);
+
+    ctx.font = "bold " + size + "px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = "rgba(0,0,0,.9)";
+    ctx.strokeText(text,256,64);
+
+    ctx.fillStyle = "white";
+    ctx.fillText(text,256,64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+
+    const material = new THREE.SpriteMaterial({
+        map:texture,
+        transparent:true,
+        depthTest:true,
+        depthWrite:false
+    });
+
+    const sprite = new THREE.Sprite(material);
+
+    sprite.scale.set(
+        type === "city" ? .34 : .42,
+        type === "city" ? .085 : .10,
+        1
+    );
+
+    sprite.userData.labelType = type;
+
+    return sprite;
+}
+
+
+/* Major country/city labels */
+
+const worldLabels = [
+
+    ["CANADA",56,-106,"country"],
+    ["UNITED STATES",39,-98,"country"],
+    ["MEXICO",23,-102,"country"],
+    ["BRAZIL",-10,-52,"country"],
+    ["ARGENTINA",-38,-64,"country"],
+    ["CHILE",-30,-71,"country"],
+    ["UNITED KINGDOM",54,-3,"country"],
+    ["FRANCE",46,2,"country"],
+    ["SPAIN",40,-4,"country"],
+    ["ITALY",42,12,"country"],
+    ["GERMANY",51,10,"country"],
+    ["EGYPT",27,30,"country"],
+    ["INDIA",22,79,"country"],
+    ["CHINA",35,103,"country"],
+    ["JAPAN",36,138,"country"],
+    ["AUSTRALIA",-25,134,"country"],
+    ["NEW ZEALAND",-41,174,"country"],
+    ["SOUTH AFRICA",-30,25,"country"],
+    ["NIGERIA",9,8,"country"],
+
+    ["TOKYO",35.6762,139.6503,"city"],
+    ["SYDNEY",-33.8688,151.2093,"city"],
+    ["SINGAPORE",1.3521,103.8198,"city"],
+    ["LONDON",51.5074,-.1278,"city"],
+    ["PARIS",48.8566,2.3522,"city"],
+    ["ROME",41.9028,12.4964,"city"],
+    ["DUBAI",25.2048,55.2708,"city"],
+    ["CAIRO",30.0444,31.2357,"city"],
+    ["DELHI",28.6139,77.2090,"city"],
+    ["NEW YORK",40.7128,-74.006,"city"],
+    ["ATLANTA",33.749,-84.388,"city"],
+    ["MIAMI",25.7617,-80.1918,"city"],
+    ["CHICAGO",41.8781,-87.6298,"city"],
+    ["DALLAS",32.7767,-96.797,"city"],
+    ["DENVER",39.7392,-104.9903,"city"],
+    ["LOS ANGELES",34.0522,-118.2437,"city"],
+    ["SAN FRANCISCO",37.7749,-122.4194,"city"],
+    ["SEATTLE",47.6062,-122.3321,"city"],
+    ["ANCHORAGE",61.2181,-149.9003,"city"],
+    ["HONOLULU",21.3069,-157.8583,"city"],
+    ["SANTO DOMINGO",18.4861,-69.9312,"city"],
+    ["SAN JUAN",18.4655,-66.1057,"city"]
+
+];
+
+
+worldLabels.forEach(item => {
+
+    const label = makeLabel(
+        item[0],
+        item[3] === "city" ? 38 : 42,
+        item[3]
+    );
+
+    const position = latLngToVector3(
+        item[1],
+        item[2],
+        EARTH_RADIUS + .035
+    );
+
+    label.position.copy(position);
+
+    labelGroup.add(label);
+
+});
+
+
+/* =========================================================
+   LOCATION MARKERS
+========================================================= */
+
+const markerGroup = new THREE.Group();
+
+scene.add(markerGroup);
+
+const markers = [];
+
+
+function createLocationMarker(location, index) {
+
+    const group = new THREE.Group();
+
+    const normal = latLngToVector3(
+        location.lat,
+        location.lng,
+        1
+    ).normalize();
+
+    group.position.copy(
+        normal.clone().multiplyScalar(EARTH_RADIUS + .045)
+    );
+
+    /* Main glowing dot */
+
+    const sphereGeometry = new THREE.SphereGeometry(
+        .025,
+        16,
+        16
+    );
+
+    const sphereMaterial = new THREE.MeshBasicMaterial({
+        color:0x555555,
+        transparent:true,
+        opacity:.65
+    });
+
+    const sphere = new THREE.Mesh(
+        sphereGeometry,
+        sphereMaterial
+    );
+
+    group.add(sphere);
+
+
+    /* Glow */
+
+    const glowGeometry = new THREE.SphereGeometry(
+        .06,
+        16,
+        16
+    );
+
+    const glowMaterial = new THREE.MeshBasicMaterial({
+        color:0x661111,
+        transparent:true,
+        opacity:.12
+    });
+
+    const glow = new THREE.Mesh(
+        glowGeometry,
+        glowMaterial
+    );
+
+    group.add(glow);
+
+
+    group.userData = {
+        index:index,
+        sphere:sphere,
+        glow:glow,
+        active:false
+    };
+
+    markerGroup.add(group);
+
+    markers.push(group);
+}
+
+
+/* Only create markers for route locations */
+
+route.forEach((location,index) => {
+
+    createLocationMarker(location,index);
+
+});
+
+
+function activateLocation(index) {
+
+    markers.forEach(marker => {
+
+        marker.userData.active = false;
+
+        marker.userData.sphere.material.color.setHex(0x555555);
+        marker.userData.sphere.material.opacity = .55;
+
+        marker.userData.glow.material.color.setHex(0x661111);
+        marker.userData.glow.material.opacity = .10;
+
+    });
+
+
+    if (!markers[index]) return;
+
+    const marker = markers[index];
+
+    marker.userData.active = true;
+
+    marker.userData.sphere.material.color.setHex(0xff3333);
+    marker.userData.sphere.material.opacity = 1;
+
+    marker.userData.glow.material.color.setHex(0xff2222);
+    marker.userData.glow.material.opacity = .65;
+
+}
+
+
+/* =========================================================
+   SANTA MODEL
+========================================================= */
+
+let santa = null;
+
+const MODEL_FILE = "santa_-_norad_santa_tracker.glb";
+
+const loader = new THREE.GLTFLoader();
+
+loader.load(
+
+    MODEL_FILE,
+
+    function(gltf) {
+
+        santa = gltf.scene;
+
+        /* Calculate model size */
+
+        const box = new THREE.Box3().setFromObject(santa);
+
+        const size = box.getSize(new THREE.Vector3());
+
+        const maxDimension = Math.max(
+            size.x,
+            size.y,
+            size.z
+        );
+
+        const desiredSize = .12;
+
+        const scale = desiredSize / maxDimension;
+
+        santa.scale.setScalar(scale);
+
+        /* Center model */
+
+        const centeredBox = new THREE.Box3().setFromObject(santa);
+
+        const center = centeredBox.getCenter(
+            new THREE.Vector3()
+        );
+
+        santa.position.sub(center);
+
+        santa.rotation.y = -Math.PI / 2;
+
+        santa.traverse(object => {
+
+            if(object.isMesh) {
+
+                object.visible = true;
+                object.frustumCulled = false;
+
+            }
+
+        });
+
+        scene.add(santa);
+
+        document.getElementById("modelStatus").innerHTML =
+            "🛷 <span class='green'>Santa sleigh connected</span>";
+
+    },
+
+    function(xhr) {
+
+        if(xhr.total) {
+
+            const percent =
+                Math.round(xhr.loaded / xhr.total * 100);
+
+            document.getElementById("modelStatus").textContent =
+                "🛷 Loading Santa's sleigh... " + percent + "%";
+
+        }
+
+    },
+
+    function(error) {
+
+        console.error(error);
+
+        document.getElementById("modelStatus").innerHTML =
+            "<span class='red'>Santa could not load.</span><br>" +
+            "Make sure the GLB filename is exactly:<br>" +
+            MODEL_FILE;
+
+    }
+
+);
+
+
+/* =========================================================
+   ROUTE MATH
+========================================================= */
+
+function latLngToVector3(lat,lng,radius) {
+
+    const phi =
+        (90-lat) * Math.PI / 180;
+
+    const theta =
+        (lng+180) * Math.PI / 180;
+
+    return new THREE.Vector3(
+
+        -radius *
+        Math.sin(phi) *
+        Math.cos(theta),
+
+        radius *
+        Math.cos(phi),
+
+        radius *
+        Math.sin(phi) *
+        Math.sin(theta)
+
+    );
+
+}
+
+
+function getRoutePosition(segment, progress) {
+
+    const start = route[segment];
+
+    const end =
+        route[(segment + 1) % route.length];
+
+    const a =
+        latLngToVector3(
+            start.lat,
+            start.lng,
+            1
+        ).normalize();
+
+    const b =
+        latLngToVector3(
+            end.lat,
+            end.lng,
+            1
+        ).normalize();
+
+    const angle = a.angleTo(b);
+
+    if(angle < .00001) {
+
+        return a.clone().multiplyScalar(
+            EARTH_RADIUS + .25
+        );
+
+    }
+
+    const sinAngle = Math.sin(angle);
+
+    const partA =
+        Math.sin((1-progress)*angle) /
+        sinAngle;
+
+    const partB =
+        Math.sin(progress*angle) /
+        sinAngle;
+
+    const result =
+        new THREE.Vector3()
+        .addScaledVector(a,partA)
+        .addScaledVector(b,partB)
+        .normalize();
+
+    return result.multiplyScalar(
+        EARTH_RADIUS + .25
+    );
+
+}
+
+
+/* =========================================================
+   TRACKING STATE
+========================================================= */
+
+let tracking = false;
+
+let currentSegment = 0;
+
+let segmentStartTime = 0;
+
+let arrivalStartTime = 0;
+
+let traveling = true;
+
+let cameraFollowingSanta = false;
+
+let cameraArrivalZoom = false;
+
+let arrivalZoomStart = 0;
+
+const TRAVEL_DURATION = 12000;
+
+/* 3 minutes */
+
+const LOCATION_STAY_DURATION =
+    3 * 60 * 1000;
+
+
+/* =========================================================
+   UI UPDATE
+========================================================= */
+
+function updateTrackingUI() {
+
+    const current =
+        route[currentSegment];
+
+    const next =
+        route[(currentSegment + 1) % route.length];
+
+    document.getElementById("locationValue").textContent =
+        current.name;
+
+    document.getElementById("activeLocation").textContent =
+        current.name;
+
+    document.getElementById("zoneValue").textContent =
+        current.zone;
+
+    document.getElementById("lastSignal").textContent =
+        current.name;
+
+
+    if(traveling) {
+
+        document.getElementById("destinationValue").textContent =
+            next.name;
+
+        document.getElementById("nextStop").textContent =
+            next.name;
+
+        document.getElementById("flightStatus").textContent =
+            "EN ROUTE";
+
+        document.getElementById("flightStatus").className =
+            "green";
+
+    } else {
+
+        document.getElementById("destinationValue").textContent =
+            "DELIVERING NOW";
+
+        document.getElementById("nextStop").textContent =
+            next.name;
+
+        document.getElementById("flightStatus").textContent =
+            "AT LOCATION";
+
+        document.getElementById("flightStatus").className =
+            "yellow";
+
+    }
+
+}
+
+
+/* =========================================================
+   START TRACKING
+========================================================= */
+
+document.getElementById("startBtn")
+.addEventListener("click", () => {
+
+    if(tracking) return;
+
+    tracking = true;
+
+    currentSegment = 0;
+
+    traveling = true;
+
+    segmentStartTime = performance.now();
+
+    cameraFollowingSanta = true;
+
+    cameraArrivalZoom = false;
+
+    document.getElementById("startBtn")
+        .classList.add("active");
+
+    document.getElementById("startBtn").textContent =
+        "● TRACKING ACTIVE";
+
+    document.getElementById("bottomTracking").textContent =
+        "ACTIVE";
+
+    updateTrackingUI();
+
+});
+
+
+/* =========================================================
+   STOP TRACKING
+========================================================= */
+
+document.getElementById("stopBtn")
+.addEventListener("click", () => {
+
+    tracking = false;
+
+    traveling = true;
+
+    cameraFollowingSanta = false;
+
+    cameraArrivalZoom = false;
+
+    document.getElementById("startBtn")
+        .classList.remove("active");
+
+    document.getElementById("startBtn").textContent =
+        "▶ START TRACKING";
+
+    document.getElementById("bottomTracking").textContent =
+        "STANDBY";
+
+    document.getElementById("flightStatus").textContent =
+        "STANDING BY";
+
+    document.getElementById("flightStatus").className =
+        "yellow";
+
+    document.getElementById("arrivalCountdown").textContent =
+        "STANDING BY";
+
+});
+
+
+/* =========================================================
+   ARRIVAL
+========================================================= */
+
+function arriveAtLocation() {
+
+    traveling = false;
+
+    arrivalStartTime = performance.now();
+
+    cameraArrivalZoom = true;
+
+    arrivalZoomStart = performance.now();
+
+    activateLocation(currentSegment);
+
+    updateTrackingUI();
+
+}
+
+
+/* =========================================================
+   NEXT LOCATION
+========================================================= */
+
+function goToNextLocation() {
+
+    currentSegment++;
+
+    if(currentSegment >= route.length - 1) {
+
+        currentSegment = 0;
+
+    }
+
+    traveling = true;
+
+    segmentStartTime = performance.now();
+
+    cameraArrivalZoom = false;
+
+    updateTrackingUI();
+
+}
+
+
+/* =========================================================
+   CAMERA
+========================================================= */
+
+function zoomToSanta() {
+
+    if(!santa) return;
+
+    const normal =
+        santa.position.clone().normalize();
+
+    const desiredTarget =
+        santa.position.clone();
+
+    const desiredCamera =
+        santa.position.clone()
+        .add(normal.multiplyScalar(.45));
+
+    controls.target.lerp(
+        desiredTarget,
+        .08
+    );
+
+    camera.position.lerp(
+        desiredCamera,
+        .06
+    );
+
+}
+
+
+function pullCameraBack() {
+
+    const desiredTarget =
+        new THREE.Vector3(0,0,0);
+
+    const desiredCamera =
+        new THREE.Vector3(
+            0,
+            3.8,
+            5.8
+        );
+
+    controls.target.lerp(
+        desiredTarget,
+        .025
+    );
+
+    camera.position.lerp(
+        desiredCamera,
+        .025
+    );
+
+}
+
+
+/* =========================================================
+   PARENT SETTINGS
+========================================================= */
+
+const states = [
+
+"Alabama",
+"Alaska",
+"Arizona",
+"Arkansas",
+"California",
+"Colorado",
+"Connecticut",
+"Delaware",
+"Florida",
+"Georgia",
+"Hawaii",
+"Idaho",
+"Illinois",
+"Indiana",
+"Iowa",
+"Kansas",
+"Kentucky",
+"Louisiana",
+"Maine",
+"Maryland",
+"Massachusetts",
+"Michigan",
+"Minnesota",
+"Mississippi",
+"Missouri",
+"Montana",
+"Nebraska",
+"Nevada",
+"New Hampshire",
+"New Jersey",
+"New Mexico",
+"New York",
+"North Carolina",
+"North Dakota",
+"Ohio",
+"Oklahoma",
+"Oregon",
+"Pennsylvania",
+"Rhode Island",
+"South Carolina",
+"South Dakota",
+"Tennessee",
+"Texas",
+"Utah",
+"Vermont",
+"Virginia",
+"Washington",
+"West Virginia",
+"Wisconsin",
+"Wyoming"
+
+];
+
+
+const stateSelect =
+    document.getElementById("stateSelect");
+
+
+states.forEach(state => {
+
+    const option =
+        document.createElement("option");
+
+    option.value = state;
+    option.textContent = state;
+
+    stateSelect.appendChild(option);
+
+});
+
+
+document.getElementById("settingsBtn")
+.addEventListener("click", () => {
+
+    document.getElementById("settingsModal")
+        .style.display = "flex";
+
+});
+
+
+document.getElementById("closeSettings")
+.addEventListener("click", () => {
+
+    document.getElementById("settingsModal")
+        .style.display = "none";
+
+});
+
+
+document.getElementById("saveSettings")
+.addEventListener("click", () => {
+
+    const state =
+        stateSelect.value;
+
+    const home =
+        document.getElementById("homeInput").value;
+
+    localStorage.setItem(
+        "santaParentSettings",
+        JSON.stringify({
+            state:state,
+            home:home
+        })
+    );
+
+    document.getElementById("homeLocation").textContent =
+        home ?
+        home + ", " + state :
+        state;
+
+    document.getElementById("settingsModal")
+        .style.display = "none";
+
+});
+
+
+/* Load saved settings */
+
+try {
+
+    const saved =
+        JSON.parse(
+            localStorage.getItem(
+                "santaParentSettings"
+            )
+        );
+
+    if(saved) {
+
+        stateSelect.value =
+            saved.state || "";
+
+        document.getElementById("homeInput").value =
+            saved.home || "";
+
+        document.getElementById("homeLocation").textContent =
+            saved.home ?
+            saved.home + ", " + saved.state :
+            saved.state || "Not set";
+
+    }
+
+} catch(e) {}
+
+
+/* =========================================================
+   MUSIC
+========================================================= */
+
+const music =
+    document.getElementById("music");
+
+const musicBtn =
+    document.getElementById("musicBtn");
+
+let musicPlaying = false;
+
+musicBtn.addEventListener("click", async () => {
+
+    try {
+
+        if(!musicPlaying) {
+
+            await music.play();
+
+            musicPlaying = true;
+
+            musicBtn.textContent =
+                "🔊 MUSIC ON";
+
+        } else {
+
+            music.pause();
+
+            musicPlaying = false;
+
+            musicBtn.textContent =
+                "🎵 MUSIC";
+
+        }
+
+    } catch(error) {
+
+        alert(
+            "Your browser blocked automatic music. " +
+            "Click the music button again."
+        );
+
+    }
+
+});
+
+
+/* =========================================================
+   UTC CLOCK
+========================================================= */
+
+function updateClock() {
+
+    const now = new Date();
+
+    document.getElementById("utcClock")
+        .textContent =
+        now.toISOString()
+        .substring(11,19);
+
+}
+
+setInterval(updateClock,1000);
+
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+
+function animate() {
+
+    requestAnimationFrame(animate);
+
+    const now = performance.now();
+
+
+    /* Santa flight */
+
+    if(
+        tracking &&
+        santa
+    ) {
+
+        if(traveling) {
+
+            const elapsed =
+                now - segmentStartTime;
+
+            const progress =
+                Math.min(
+                    elapsed / TRAVEL_DURATION,
+                    1
+                );
+
+            const position =
+                getRoutePosition(
+                    currentSegment,
+                    progress
+                );
+
+            santa.position.copy(position);
+
+            /* Turn Santa along the route */
+
+            const nextPosition =
+                getRoutePosition(
+                    currentSegment,
+                    Math.min(progress+.01,1)
+                );
+
+            const direction =
+                nextPosition
+                .clone()
+                .sub(position)
+                .normalize();
+
+            if(direction.length() > 0) {
+
+                const lookTarget =
+                    position.clone()
+                    .add(direction);
+
+                santa.lookAt(lookTarget);
+
+                santa.rotateY(-Math.PI / 2);
+
+            }
+
+
+            if(progress >= 1) {
+
+                santa.position.copy(
+                    getRoutePosition(
+                        currentSegment,
+                        1
+                    )
+                );
+
+                arriveAtLocation();
+
+            }
+
+        }
+
+        else {
+
+            /* Santa stays at the location */
+
+            santa.position.copy(
+                getRoutePosition(
+                    currentSegment,
+                    1
+                )
+            );
+
+
+            const stayElapsed =
+                now - arrivalStartTime;
+
+            const remaining =
+                Math.max(
+                    0,
+                    LOCATION_STAY_DURATION -
+                    stayElapsed
+                );
+
+
+            const minutes =
+                Math.floor(
+                    remaining / 60000
+                );
+
+            const seconds =
+                Math.floor(
+                    (remaining % 60000) / 1000
+                );
+
+
+            document.getElementById(
+                "arrivalCountdown"
+            ).textContent =
+                minutes + ":" +
+                String(seconds).padStart(2,"0");
+
+
+            if(
+                stayElapsed >=
+                LOCATION_STAY_DURATION
+            ) {
+
+                goToNextLocation();
+
+            }
+
+        }
+
+
+        /* Camera behavior */
+
+        if(cameraFollowingSanta) {
+
+            if(cameraArrivalZoom) {
+
+                zoomToSanta();
+
+            } else {
+
+                /* Follow Santa during flight */
+
+                const normal =
+                    santa.position
+                    .clone()
+                    .normalize();
+
+                const target =
+                    santa.position.clone();
+
+                const desired =
+                    santa.position.clone()
+                    .add(normal.multiplyScalar(.75));
+
+                controls.target.lerp(
+                    target,
+                    .045
+                );
+
+                camera.position.lerp(
+                    desired,
+                    .025
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /* Active location pulsing */
+
+    markers.forEach(marker => {
+
+        if(marker.userData.active) {
+
+            const pulse =
+                1 +
+                Math.sin(now / 220) * .45;
+
+            marker.userData.glow.scale.setScalar(
+                pulse
+            );
+
+            marker.userData.glow.material.opacity =
+                .35 +
+                Math.sin(now / 220) * .2;
+
+        }
+
+    });
+
+
+    controls.update();
+
+    renderer.render(
+        scene,
+        camera
+    );
+
+}
+
+animate();
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+window.addEventListener("resize", () => {
+
+    camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+
+});
+
+</script>
+
+</body>
+</html>
